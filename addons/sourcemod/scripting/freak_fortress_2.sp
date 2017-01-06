@@ -89,6 +89,7 @@ new uberTarget[MAXPLAYERS+1];
 new shield[MAXPLAYERS+1];
 new detonations[MAXPLAYERS+1];
 new bool:playBGM[MAXPLAYERS+1]=true;
+new Killstreak[MAXPLAYERS+1];  // counts killstreaks by players
 
 new String:currentBGM[MAXPLAYERS+1][PLATFORM_MAX_PATH];
 
@@ -383,6 +384,32 @@ static const String:ff2versiondates[][]=
 	"September 1, 2016",	//1.10.13
 	"October 21, 2016"		//1.10.14
 };
+
+
+stock TF2_GetMaxHealth(iClient)
+{
+    new maxhealth = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, iClient);
+    return ((maxhealth == -1 || maxhealth == 80896) ? GetEntProp(iClient, Prop_Data, "m_iMaxHealth") : maxhealth);
+}
+
+
+public Action:OnPlayerHealed(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new patient = GetClientOfUserId(GetEventInt(event, "patient"));
+	new healer = GetClientOfUserId(GetEventInt(event, "healer"));
+	new amount = GetEventInt(event, "amount");
+
+
+	Debug("%N Healed client %N by %d", healer, patient, amount);
+	Debug("Total killstreak for %N: %d", healer, Killstreak[healer]);
+
+	if ((GetClientHealth(patient) < TF2_GetMaxHealth(patient)) && (patient != healer))  // allow healing that buffs above max hp to count toward killsteak
+	{
+		Killstreak[healer]+=2*amount;
+		SetEntProp(healer, Prop_Send, "m_nStreaks", RoundFloat(Killstreak[healer]/400.0));  // set player ks
+	}
+}
+
 
 stock FindVersionData(Handle:panel, versionIndex)
 {
@@ -1183,6 +1210,7 @@ public OnPluginStart()
 	HookEvent("object_destroyed", OnObjectDestroyed, EventHookMode_Pre);
 	HookEvent("object_deflected", OnObjectDeflected, EventHookMode_Pre);
 	HookEvent("deploy_buff_banner", OnDeployBackup);
+	HookEvent("player_healed", OnPlayerHealed);
 
 	HookUserMessage(GetUserMessageId("PlayerJarated"), OnJarate);  //Used to subtract rage when a boss is jarated (not through Sydney Sleeper)
 
@@ -2344,6 +2372,7 @@ public Action:OnRoundStart(Handle:event, const String:name[], bool:dontBroadcast
 	for(new client=1; client<=MaxClients; client++)
 	{
 		Damage[client]=0;
+		Killstreak[client]=0;
 		uberTarget[client]=-1;
 		emitRageSound[client]=true;
 		if(IsValidClient(client) && GetClientTeam(client)>_:TFTeam_Spectator)
@@ -3308,13 +3337,13 @@ EquipBoss(boss)
 			KvGetString(BossKV[Special[boss]], "attributes", attributes, sizeof(attributes));
 			if(attributes[0]!='\0')
 			{
-				Format(attributes, sizeof(attributes), "68 ; %i ; 2 ; 3.1 ; %s", TF2_GetPlayerClass(client)==TFClass_Scout ? 1 : 2 ,attributes);
+				Format(attributes, sizeof(attributes), "68 ; %i ; %s", TF2_GetPlayerClass(client)==TFClass_Scout ? 1 : 2 ,attributes);
 					//68: +2 cap rate
 					//2: x3.1 damage
 			}
 			else
 			{
-				Format(attributes, sizeof(attributes), "68 ; %i ; 2 ; 3.1", TF2_GetPlayerClass(client)==TFClass_Scout ? 1 : 2);
+				Format(attributes, sizeof(attributes), "68 ; %i", TF2_GetPlayerClass(client)==TFClass_Scout ? 1 : 2);
 					//68: +2 cap rate
 					//2: x3.1 damage
 			}
@@ -3483,16 +3512,229 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	switch(iItemDefinitionIndex)
 	{
-		case 38, 457:  //Axtinguisher, Postal Pummeler
+//Scout
+	//Primary
+	case 1103:  //Backscatter
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "179 ; 1");
+		if(itemOverride!=INVALID_HANDLE)
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
+			item=itemOverride;
+			return Plugin_Changed;
 		}
-		case 39, 351, 1081:  //Flaregun, Detonator, Festive Flaregun
+	}
+
+	case 220:  //Shortstop
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 1.0");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 772:  //Baby Face's Blaster
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.85 ; 418 ; 1 ; 419 ; 1 ; 532 ; 0.15 ; 651 ; 0.5 ; 709 ; 1 ; 3 ;0.66", true);
+					//394: 15% firing speed bonus hidden
+					//418: Build hype for faster speed
+					//419: Hype resets on jump
+					//532: Hype decays
+					//651: Fire rate increases as health decreases
+					//709: Weapon spread increases as health decreases
+
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 13:  //Scattergun
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.85 ; 2 ; 1.10");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+	case 222, 1121:  //Mad Milk, Mutated Milk
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "278 ; 0.8 ; 69 ; 0.5");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 812, 833: //Guillotine
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "547 ; 0.25 ; 199 ; 0.25");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Melee
+	case 648:  //Wrap Assassin
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "279 ; 2.0");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 355: //Fan O' War
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "57 ; 2 ; 77 ; 0.75");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 349: //Sun-on-a-Stick
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.5 ; 21 ; 0", true);
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+
+//Soldier
+	//Primary
+
+	case 730:  //Beggar's Bazooka
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "37 ; 1.25 ; 97 ; 0.9");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 441: //Cow Mangler
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "179 ; 1");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+	case 9, 10, 11, 12, 199, 1141:  //Shotgun
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.8 ; 4 ; 1.34 ; 28 ; 1 ; 69 ; 1.25");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 442: //Righteous bison
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "547 ; 0.6 ; 97 ; 0.8 ; 20 ; 1");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 415:  //Reserve Shooter
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 2.0");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 226:  //Battalion's Backup
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "252 ; 0.5 ; 177 ; 0.75");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 444:  //Mantreads
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "326 ; 1.8");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Melee
+
+	case 128: // Equalizer
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.3");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+//Pyro
+	//Primary
+	case 40, 1146:  //Backburner
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "162 ; 1.3 ; 165 ; 1.3 ; 71 ; 2.0");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 21, 208, 659, 741, 798, 807, 887, 896, 905, 914, 963, 972, 30474:  //Flamethrower, Rainblower, Napalmer
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.25 ; 71 ; 2.0 ; 170 ; 1.5");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 215:  //Degreaser
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "170 ; 1.5 ; 178 ; 0.35 ; 71 ; 1.25 ; 1 ; 0.9", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+
+	case 39, 351, 1081:  //Flaregun, Detonator, Festive Flaregun
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "25 ; 0.5 ; 58 ; 3.2 ; 144 ; 1.0 ; 207 ; 1.33", true);
 				//25: -50% ammo
@@ -3505,182 +3747,400 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				return Plugin_Changed;
 			}
 		}
-		case 40, 1146:  //Backburner, Festive Backburner
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "165 ; 1.0");
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 224:  //L'etranger
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "85 ; 0.5 ; 157 ; 1.0 ; 253 ; 1.0");
-				//85: +50% time needed to regen cloak
-				//157: +1 second needed to fully disguise
-				//253: +1 second needed to fully cloak
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 239, 1084, 1100:  //GRU, Festive GRU, Bread Bite
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.5 ; 107 ; 1.5 ; 128 ; 1 ; 191 ; -7 ; 772 ; 1.5", true);
-				//1: -50% damage
-				//107: +50% move speed
-				//128: Only when weapon is active
-				//191: -7 health/second
-				//772: Holsters 50% slower
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 56, 1005, 1092:  //Huntsman, Festive Huntsman, Fortified Compound
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.5 ; 76 ; 2");
-				//2: +50% damage
-				//76: +100% ammo
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		/*case 132, 266, 482:  //Eyelander, HHHH, Nessie's Nine Iron - commented out because
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "202 ; 0.5 ; 125 ; -15", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}*/
-		case 226:  //Battalion's Backup
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "140 ; 10.0");
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 231:  //Darwin's Danger Shield
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 50");  //+50 health
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 305, 1079:  //Crusader's Crossbow, Festive Crusader's Crossbow
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.2 ; 17 ; 0.15");
-				//2: +20% damage
-				//17: +15% uber on hit
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 331:  //Fists of Steel
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "205 ; 0.8 ; 206 ; 2.0 ; 772 ; 2.0", true);
-				//205: -80% damage from ranged while active
-				//206: +100% damage from melee while active
-				//772: Holsters 100% slower
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 415:  //Reserve Shooter
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.1 ; 3 ; 0.5 ; 114 ; 1 ; 179 ; 1 ; 547 ; 0.6", true);
-				//2: +10% damage bonus
-				//3: -50% clip size
-				//114: Mini-crits targets launched airborne by explosions, grapple hooks or enemy attacks
-				//179: Minicrits become crits
-				//547: Deploys 40% faster
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 444:  //Mantreads
-		{
-			/*new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5");
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}*/
 
-			#if defined _tf2attributes_included
-			if(tf2attributes)
-			{
-				TF2Attrib_SetByDefIndex(client, 58, 1.5);
-			}
-			#endif
-		}
-		case 648:  //Wrap Assassin
+	//Melee
+
+	case 38, 457, 1000:  //Axtinguisher, Postal Pummeler, Festive Axtinguisher
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "21 ; 0.0 ; 2 ; 1.5 ; 5 ; 1.20", true);
+		if(itemOverride!=INVALID_HANDLE)
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "279 ; 2.0");
-				//279: 2 ornaments
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
+			item=itemOverride;
+			return Plugin_Changed;
 		}
-		case 656:  //Holiday Punch
+	}
+
+	case 348: // Sharpened Volcano Fragment
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "31 ; 4 ; 1 ; 0.5", true);
+		if (itemOverride != INVALID_HANDLE)
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "199 ; 0 ; 547 ; 0 ; 358 ; 0 ; 362 ; 0 ; 363 ; 0 ; 369 ; 0", true);
-				//199: Holsters 100% faster
-				//547: Deploys 100% faster
-				//Other attributes: Because TF2Items doesn't feel like stripping the Holiday Punch's attributes for some reason
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
+			item = itemOverride;
+			return Plugin_Changed;
 		}
-		case 772:  //Baby Face's Blaster
+	}
+
+//Demoman
+	//Primary
+	case 308:  //Loch 'n Load
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "3 ; 0.5 ; 2 ; 1.2 ; 127 ; 2 ; 103 ; 1.25", true);
+		if(itemOverride!=INVALID_HANDLE)
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.25 ; 109 ; 0.5 ; 125 ; -25 ; 394 ; 0.85 ; 418 ; 1 ; 419 ; 100 ; 532 ; 0.5 ; 651 ; 0.5 ; 709 ; 1", true);
-				//2: +25% damage bonus
-				//109: -50% health from packs on wearer
-				//125: -25 max health
-				//394: 15% firing speed bonus hidden
-				//418: Build hype for faster speed
-				//419: Hype resets on jump
-				//532: Hype decays
-				//651: Fire rate increases as health decreases
-				//709: Weapon spread increases as health decreases
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
+			item=itemOverride;
+			return Plugin_Changed;
 		}
-		case 1103:  //Back Scatter
+	}
+
+	case 996: // Loose Cannon
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.25 ; 114 ; 1 ; 103 ; 1.5");
+		if (itemOverride != INVALID_HANDLE)
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "179 ; 1");
-				//179: Crit instead of mini-critting
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
+			item = itemOverride;
+			return Plugin_Changed;
 		}
+	}
+
+	case 608:  //Bootlegger
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 135 ; 0.55", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 405:  //Ali Baba's Wee Booties
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 249 ; 1.20 ; 246 ; 3.5", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+	case 20, 207, 661, 797, 806, 886, 895, 904, 913, 962, 971:  //Stickybomb Launcher
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.85 ; 99 ; 1.20 ; 670 ; 0.80");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Melee
+
+	case 172:  //Scotsman's Skullcutter
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "54 ; 0.90 ; 2 ; 1.4 ; 128 ; 1", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 327:  //Claidheamh Mòr
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "202 ; 2.0 ; 249 ; 0.8", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 404:  //Persian Persuader
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "107 ; 1.08 ; 16 ; 15 ; 1 ; 0.7 ; 249 ; 1.75 ; 258 ; 1", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 132, 266, 482, 1082:  //Eyelander
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.8");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+
+
+//Heavy
+	//Primary
+
+	case 312:  //Brass Beast
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.2 ; 183 ; 0.5 ; 375 ; 3 ; 86 ; 0.8", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 424: // Tomislav
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "75 ; 1.25");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 811, 832: //Huo-long Heater
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "280 ; 6 ; 430 ; 1 ; 2 ; 1.3 ; 103 ; 1.5", true);
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+
+	case 425:  //Family Business
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.0 ; 2 ; 1.5 ; 4 ; 1.34 ; 106 ; 0.8 ; 29 ; 1 ; 45 ; 1.2 ; 69 ; 0.6 ; 110 ; 15", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Melee
+
+	case 43:  //KGB
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "31 ; 5 ; 5 ; 1.2", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 239, 1084, 1100:  //GRU, Festive GRU, Bread Bite
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "107 ; 1.5 ; 1 ; 0.5 ; 128 ; 1 ; 191 ; -7", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 656:  //Holiday Punch
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "199 ; 0 ; 547 ; 0 ; 358 ; 0 ; 362 ; 0 ; 363 ; 0 ; 369 ; 0", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 331:  //Fists of Steel
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "177 ; 1.4 ; 412 ; 0.5 ; 5 ; 1.25 ; 128 ; 1", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+//Engineer
+	//Primary
+
+	case 997:  //Rescue Ranger
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 527: //Widowmaker
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "6 ; 0.75");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+
+	case 140:  //Wrangler
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "128 ; 1 ; 58 ; 1.20 ; 287 ; 1.25");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Melee
+
+	case 155: //Southern Hospitality
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "345 ; 5.0 ; 343 ; 1.2", true);
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+
+//Medic
+	//Primary
+
+	case 305, 1079:  //Crusader's Crossbow, Festive Crusader's Crossbow
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "17 ; 0.12 ; 2 ; 1.5"); //; 266 ; 1.0");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+
+
+
+//Sniper
+	//Primary
+
+	case 56, 1005, 1092:  //Huntsman, Festive Huntsman, Fortified Compound
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.5 ; 76 ; 1.80");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 526:  //Machina
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 1098:	//Classic
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "91 ; 0.1 ; 97 ; 0.7 ; 6 ; 0.7");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Secondary
+
+	case 231:  //Darwin's Danger Shield
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 107 ; 1.07 ; 76 ; 1.20", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 751:  //Cleaner's Carbine
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "324 ; 1.6 ; 106 ; 0.7");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Melee
+
+	case 401: //Shahanshah
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "224 ; 1.5 ; 225 ; 0.5");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+//Spy
+	//Primary
+
+	case 224:  //L'Étranger
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.5 ; 166 ; 15 ; 83 ; 0.9", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 460:  //Enforcer
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "82 ; 1.5 ; 253 ; 0.5 ; 2 ; 1.5 ; 177 ; 1.3 ; 78 ; 1.5", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Knife
+
+	case 225, 574:  //Your Eternal Reward, Wanga Prick
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "160 ; 1 ; 155 ; 1", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	case 356:  //Conniver's Kunai
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "125 ; -60 ; 217 ; 1", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+
+	//Cloak
+
+	case 59:  //Dead Ringer
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "33 ; 1 ; 35 ; 1.8 ; 34 ; 1.4", true);
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
 	}
 
 	if(TF2_GetPlayerClass(client)==TFClass_Soldier && (!StrContains(classname, "tf_weapon_rocketlauncher", false) || !StrContains(classname, "tf_weapon_shotgun", false)))
@@ -5826,6 +6286,8 @@ public Action:OnPlayerHurt(Handle:event, const String:name[], bool:dontBroadcast
 	BossHealth[boss]-=damage;
 	BossCharge[boss][0]+=damage*100.0/BossRageDamage[boss];
 	Damage[attacker]+=damage;
+	Killstreak[attacker]+=damage;
+	SetEntProp(attacker, Prop_Send, "m_nStreaks", RoundFloat(Killstreak[attacker]/400.0));  // set player ks
 
 	new healers[MAXPLAYERS];
 	new healerCount;
@@ -5845,11 +6307,15 @@ public Action:OnPlayerHurt(Handle:event, const String:name[], bool:dontBroadcast
 			if(damage<10 || uberTarget[healers[target]]==attacker)
 			{
 				Damage[healers[target]]+=damage;
+				Killstreak[healers[target]]+=damage;
 			}
 			else
 			{
 				Damage[healers[target]]+=damage/(healerCount+1);
+				Killstreak[healers[target]]+=damage/(healerCount+1);
 			}
+			SetEntProp(healers[target], Prop_Send, "m_nStreaks", RoundFloat(Killstreak[healers[target]]/400.0));  // set player ks to damage fdiv 100
+
 		}
 	}
 
@@ -5925,11 +6391,11 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 				return Plugin_Changed;
 			}
 
-			if(TF2_IsPlayerInCondition(client, TFCond_CritMmmph))
+			/*if(TF2_IsPlayerInCondition(client, TFCond_CritMmmph))
 			{
 				damage*=0.25;
 				return Plugin_Changed;
-			}
+			}*/
 
 			if(shield[client] && damage)
 			{
@@ -6143,7 +6609,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 
 						new health=GetClientHealth(attacker);
 						new max=GetEntProp(attacker, Prop_Data, "m_iMaxHealth");
-						new newhealth=health+50;
+						new newhealth=health+70;
 						if(health<max+100)
 						{
 							if(newhealth>max+100)
@@ -6229,14 +6695,14 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 							}
 						}
 					}
-					case 594:  //Phlogistinator
+					/*case 594:  //Phlogistinator
 					{
 						if(!TF2_IsPlayerInCondition(attacker, TFCond_CritMmmph))
 						{
 							damage/=2.0;
 							return Plugin_Changed;
 						}
-					}
+					}*/
 					case 1099:  //Tide Turner
 					{
 						SetEntPropFloat(attacker, Prop_Send, "m_flChargeMeter", 100.0);
