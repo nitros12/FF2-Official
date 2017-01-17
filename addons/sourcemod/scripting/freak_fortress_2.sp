@@ -2156,17 +2156,9 @@ public Action:Timer_Announce(Handle:timer)
 		{
 			case 1:
 			{
-				CPrintToChatAll("{olive}[FF2]{default} VS Saxton Hale/Freak Fortress 2 group: {olive}http://steamcommunity.com/groups/vssaxtonhale{default}");
-			}
-			case 3:
-			{
-				CPrintToChatAll("{default} === Freak Fortress 2 v%s (based on VS Saxton Hale Mode by {olive}RainBolt Dash{default}, {olive}FlaminSarge{default}, and {blue}Chdata{default}) === ", PLUGIN_VERSION);
-			}
-			case 4:
-			{
 				CPrintToChatAll("{olive}[FF2]{default} %t", "type_ff2_to_open_menu");
 			}
-			case 5:
+			case 2:
 			{
 				announcecount=0;
 				CPrintToChatAll("{olive}[FF2]{default} %t", "ff2_last_update", PLUGIN_VERSION, ff2versiondates[maxVersion]);
@@ -3512,6 +3504,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	switch(iItemDefinitionIndex)
 	{
+	
 //Scout
 	//Primary
 	case 1103:  //Backscatter
@@ -3526,7 +3519,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 220:  //Shortstop
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 1.0");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 1.0", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3574,7 +3567,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 812, 833: //Guillotine
 	{
-		new Handle:itemOverride = PrepareItemHandle(item, _, _, "547 ; 0.25 ; 199 ; 0.25");
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "278 ; 0.8");
 		if (itemOverride != INVALID_HANDLE)
 		{
 			item = itemOverride;
@@ -3636,11 +3629,21 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			return Plugin_Changed;
 		}
 	}
+	
+	case 414: //Liberty Launcher
+	{
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "178 ; 0.65 ; 215 ; 100");
+		if (itemOverride != INVALID_HANDLE)
+		{
+			item = itemOverride;
+			return Plugin_Changed;
+		}
+	}
 
 	//Secondary
 	case 9, 10, 11, 12, 199, 1141:  //Shotgun
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.8 ; 4 ; 1.34 ; 28 ; 1 ; 69 ; 1.25");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "4 ; 1.34 ; 144 ; 1 ; 2 ; 1.25");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3650,7 +3653,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 442: //Righteous bison
 	{
-		new Handle:itemOverride = PrepareItemHandle(item, _, _, "547 ; 0.6 ; 97 ; 0.8 ; 20 ; 1");
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "97 ; 0.7 ; 20 ; 1");
 		if (itemOverride != INVALID_HANDLE)
 		{
 			item = itemOverride;
@@ -3660,7 +3663,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 415:  //Reserve Shooter
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 2.0");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 2.0 ; 2 ; 1.5 ; 179 ; 1 ; 3 ; 0.5 ; 178 ; 0.9 ; 114 ; 1", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3680,7 +3683,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 444:  //Mantreads
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "326 ; 1.8");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "326 ; 1.7");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3724,7 +3727,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 215:  //Degreaser
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "170 ; 1.5 ; 178 ; 0.35 ; 71 ; 1.25 ; 1 ; 0.9", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "170 ; 1.5 ; 178 ; 0.5 ; 71 ; 1.25 ; 1 ; 0.9", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3752,7 +3755,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 38, 457, 1000:  //Axtinguisher, Postal Pummeler, Festive Axtinguisher
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "21 ; 0.0 ; 2 ; 1.5 ; 5 ; 1.20", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "21 ; 0.0 ; 2 ; 1.8 ; 5 ; 1.20", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3772,9 +3775,19 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 //Demoman
 	//Primary
+	case 19, 206, 1007, 15077, 15079, 15091, 15092, 15116, 15117, 15142, 15158:	//Grenade Launcher
+	{
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.25 ; 114 ; 1");
+		if(itemOverride!=INVALID_HANDLE)
+		{
+			item=itemOverride;
+			return Plugin_Changed;
+		}
+	}
+	
 	case 308:  //Loch 'n Load
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "3 ; 0.5 ; 2 ; 1.2 ; 127 ; 2 ; 103 ; 1.25", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "3 ; 0.5 ; 2 ; 1.5 ; 127 ; 2 ; 103 ; 1.25 ; 114 ; 1", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3784,7 +3797,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 996: // Loose Cannon
 	{
-		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.25 ; 114 ; 1 ; 103 ; 1.5");
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.25 ; 114 ; 1 ; 103 ; 1.2");
 		if (itemOverride != INVALID_HANDLE)
 		{
 			item = itemOverride;
@@ -3794,7 +3807,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 608:  //Bootlegger
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 135 ; 0.55", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 135 ; 0.50", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3857,7 +3870,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 132, 266, 482, 1082:  //Eyelander
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.8");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.9");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3872,7 +3885,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 312:  //Brass Beast
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.2 ; 183 ; 0.5 ; 375 ; 3 ; 86 ; 0.8", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "375 ; 3");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3904,7 +3917,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 425:  //Family Business
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.0 ; 2 ; 1.5 ; 4 ; 1.34 ; 106 ; 0.8 ; 29 ; 1 ; 45 ; 1.2 ; 69 ; 0.6 ; 110 ; 15", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "77 ; 0.0 ; 2 ; 1.5 ; 4 ; 1.34 ; 106 ; 0.8 ; 107 ; 1.1 ; 29 ; 1 ; 45 ; 1.2 ; 69 ; 0.6 ; 110 ; 15", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3979,9 +3992,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	//Secondary
 
-	case 140:  //Wrangler
+	case 140, 30668:  //Wrangler, Gigar Counter
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "128 ; 1 ; 58 ; 1.20 ; 287 ; 1.25");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "128 ; 1 ; 58 ; 1.10 ; 287 ; 1.25");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4007,7 +4020,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 305, 1079:  //Crusader's Crossbow, Festive Crusader's Crossbow
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "17 ; 0.12 ; 2 ; 1.5"); //; 266 ; 1.0");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "17 ; 0.12 ; 2 ; 1.2"); //; 266 ; 1.0");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -4043,7 +4056,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 1098:	//Classic
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "91 ; 0.1 ; 97 ; 0.7 ; 6 ; 0.7");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -5234,8 +5247,9 @@ public Action:ClientTimer(Handle:timer)
 			else if((!StrContains(classname, "tf_weapon_smg") && index!=751) ||  //Cleaner's Carbine
 			         !StrContains(classname, "tf_weapon_compound_bow") ||
 			         !StrContains(classname, "tf_weapon_crossbow") ||
-			         !StrContains(classname, "tf_weapon_pistol") ||
-			         !StrContains(classname, "tf_weapon_handgun_scout_secondary"))
+			        (!StrContains(classname, "tf_weapon_pistol") && class==TFClass_Scout) ||
+			         !StrContains(classname, "tf_weapon_handgun_scout_secondary") ||
+					 !StrContains(classname, "tf_weapon_cleaver"))
 			{
 				addthecrit=true;
 				if(class==TFClass_Scout && cond==TFCond_HalloweenCritCandy)
