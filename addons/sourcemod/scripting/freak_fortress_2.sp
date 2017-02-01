@@ -386,6 +386,10 @@ static const String:ff2versiondates[][]=
 };
 
 
+UpdateKillstreak(int client) {
+	SetEntProp(client, Prop_Send, "m_nStreaks", RoundFloat(Killstreak[client]/400.0));  // set player ks
+}
+
 stock TF2_GetMaxHealth(iClient)
 {
     new maxhealth = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, iClient);
@@ -403,10 +407,10 @@ public Action:OnPlayerHealed(Handle:event, const String:name[], bool:dontBroadca
 	Debug("%N Healed client %N by %d", healer, patient, amount);
 	Debug("Total killstreak for %N: %d", healer, Killstreak[healer]);
 
-	if ((GetClientHealth(patient) < TF2_GetMaxHealth(patient)) && (patient != healer))  // allow healing that buffs above max hp to count toward killsteak
+	if ((GetClientHealth(patient) < TF2_GetMaxHealth(patient)) && (patient != healer) && IsValidClient(healer))  // block healing that buffs above max hp to count toward killsteak
 	{
 		Killstreak[healer]+=2*amount;
-		SetEntProp(healer, Prop_Send, "m_nStreaks", RoundFloat(Killstreak[healer]/400.0));  // set player ks
+		UpdateKillstreak(healer);
 	}
 }
 
@@ -3504,7 +3508,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	switch(iItemDefinitionIndex)
 	{
-	
+
 //Scout
 	//Primary
 	case 1103:  //Backscatter
@@ -3544,7 +3548,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 	}
 
-	case 13:  //Scattergun
+	case 13, 200, 669, 799, 808, 888, 906, 915, 973, 15002, 15015, 15021, 15029, 15036, 15053, 15065, 15065, 15069, 15106, 15107, 15108, 15131, 15151, 15157:  //Scattergun
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.85 ; 2 ; 1.10");
 		if(itemOverride!=INVALID_HANDLE)
@@ -3557,7 +3561,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	//Secondary
 	case 222, 1121:  //Mad Milk, Mutated Milk
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "278 ; 0.8 ; 69 ; 0.5");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "278 ; 0.9");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3629,10 +3633,10 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			return Plugin_Changed;
 		}
 	}
-	
+
 	case 414: //Liberty Launcher
 	{
-		new Handle:itemOverride = PrepareItemHandle(item, _, _, "178 ; 0.65 ; 215 ; 100");
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "178 ; 0.65");
 		if (itemOverride != INVALID_HANDLE)
 		{
 			item = itemOverride;
@@ -3641,7 +3645,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 
 	//Secondary
-	case 9, 10, 11, 12, 199, 1141:  //Shotgun
+	case 9, 10, 11, 12, 199, 1141, 15003, 15016, 15044, 15047, 15085, 15109, 15132, 15133, 15152:  //Shotgun
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "4 ; 1.34 ; 144 ; 1 ; 2 ; 1.25");
 		if(itemOverride!=INVALID_HANDLE)
@@ -3715,7 +3719,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		}
 	}
 
-	case 21, 208, 659, 741, 798, 807, 887, 896, 905, 914, 963, 972, 30474:  //Flamethrower, Rainblower, Napalmer
+	case 21, 208, 659, 741, 798, 807, 887, 896, 905, 914, 963, 972, 15005, 15017, 15030, 15034, 15049, 15054, 15066, 15067, 15068, 15089, 15090, 15115, 15141, 30474:  //Flamethrower, Rainblower, Napalmer
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.25 ; 71 ; 2.0 ; 170 ; 1.5");
 		if(itemOverride!=INVALID_HANDLE)
@@ -3784,7 +3788,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 			return Plugin_Changed;
 		}
 	}
-	
+
 	case 308:  //Loch 'n Load
 	{
 		new Handle:itemOverride=PrepareItemHandle(item, _, _, "3 ; 0.5 ; 2 ; 1.5 ; 127 ; 2 ; 103 ; 1.25 ; 114 ; 1", true);
@@ -3797,7 +3801,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 996: // Loose Cannon
 	{
-		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.25 ; 114 ; 1 ; 103 ; 1.2");
+		new Handle:itemOverride = PrepareItemHandle(item, _, _, "2 ; 1.50 ; 114 ; 1 ; 103 ; 1.2");
 		if (itemOverride != INVALID_HANDLE)
 		{
 			item = itemOverride;
@@ -3807,7 +3811,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 608:  //Bootlegger
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 135 ; 0.50", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 135 ; 0.55", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3817,7 +3821,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 405:  //Ali Baba's Wee Booties
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 249 ; 1.20 ; 246 ; 3.5", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 25 ; 249 ; 1.20 ; 246 ; 4.0", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3826,9 +3830,9 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 	}
 
 	//Secondary
-	case 20, 207, 661, 797, 806, 886, 895, 904, 913, 962, 971:  //Stickybomb Launcher
+	case 20, 207, 661, 797, 806, 886, 895, 904, 913, 962, 971, 15009, 15012, 15024, 15038, 15045, 15048, 15082, 15083, 15084, 15113, 15137, 15138, 15155:  //Stickybomb Launcher
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.85 ; 99 ; 1.20 ; 670 ; 0.80");
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "6 ; 0.85 ; 99 ; 1.20 ; 670 ; 0.2 ; 727 ; 1.15");
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3850,7 +3854,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 327:  //Claidheamh Mòr
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "202 ; 2.0 ; 249 ; 0.8", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "202 ; 2.0 ; 249 ; 0.75", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -3860,7 +3864,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	case 404:  //Persian Persuader
 	{
-		new Handle:itemOverride=PrepareItemHandle(item, _, _, "107 ; 1.08 ; 16 ; 15 ; 1 ; 0.7 ; 249 ; 1.75 ; 258 ; 1", true);
+		new Handle:itemOverride=PrepareItemHandle(item, _, _, "107 ; 1.10 ; 16 ; 20 ; 1 ; 0.7 ; 249 ; 1.75 ; 258 ; 1 ; 778 ; 20", true);
 		if(itemOverride!=INVALID_HANDLE)
 		{
 			item=itemOverride;
@@ -6301,7 +6305,7 @@ public Action:OnPlayerHurt(Handle:event, const String:name[], bool:dontBroadcast
 	BossCharge[boss][0]+=damage*100.0/BossRageDamage[boss];
 	Damage[attacker]+=damage;
 	Killstreak[attacker]+=damage;
-	SetEntProp(attacker, Prop_Send, "m_nStreaks", RoundFloat(Killstreak[attacker]/400.0));  // set player ks
+	UpdateKillstreak(attacker);
 
 	new healers[MAXPLAYERS];
 	new healerCount;
@@ -6328,7 +6332,7 @@ public Action:OnPlayerHurt(Handle:event, const String:name[], bool:dontBroadcast
 				Damage[healers[target]]+=damage/(healerCount+1);
 				Killstreak[healers[target]]+=damage/(healerCount+1);
 			}
-			SetEntProp(healers[target], Prop_Send, "m_nStreaks", RoundFloat(Killstreak[healers[target]]/400.0));  // set player ks to damage fdiv 100
+			UpdateKillstreak(target);
 
 		}
 	}
@@ -6550,10 +6554,6 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					{
 						new health=GetClientHealth(attacker);
 						new newhealth=health+50;
-						if(newhealth<=GetEntProp(attacker, Prop_Data, "m_iMaxHealth"))  //No overheal allowed
-						{
-							SetEntityHealth(attacker, newhealth);
-						}
 
 						if(TF2_IsPlayerInCondition(attacker, TFCond_OnFire))
 						{
@@ -6563,11 +6563,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					case 310:  //Warrior's Spirit
 					{
 						new health=GetClientHealth(attacker);
-						new newhealth=health+50;
-						if(newhealth<=GetEntProp(attacker, Prop_Data, "m_iMaxHealth"))  //No overheal allowed
-						{
-							SetEntityHealth(attacker, newhealth);
-						}
+						new newhealth=health+70;
 
 						if(TF2_IsPlayerInCondition(attacker, TFCond_OnFire))
 						{
@@ -6580,13 +6576,6 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					}
 					case 327:  //Claidheamh Mòr
 					{
-						new health=GetClientHealth(attacker);
-						new newhealth=health+25;
-						if(newhealth<=GetEntProp(attacker, Prop_Data, "m_iMaxHealth"))  //No overheal allowed
-						{
-							SetEntityHealth(attacker, newhealth);
-						}
-
 						if(TF2_IsPlayerInCondition(attacker, TFCond_OnFire))
 						{
 							TF2_RemoveCondition(attacker, TFCond_OnFire);
